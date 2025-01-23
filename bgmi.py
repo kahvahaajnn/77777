@@ -104,11 +104,22 @@ async def attack(update: Update, context: CallbackContext):
     args = context.args
     now = datetime.now()
 
+    # Admin cannot be banned
+    if user_id == str(ADMIN_USER_ID):
+        await context.bot.send_message(chat_id=chat_id, text="*✅ Admins cannot be banned or restricted.*", parse_mode='Markdown')
+        return
+
     # Check if user is banned
     if user_ban_status.get(user_id, False):
-        remaining_ban = ban_duration - (now - ban_timers[user_id]).seconds // 60
-        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You are banned. Try again in {remaining_ban} minutes.*", parse_mode='Markdown')
-        return
+        ban_end_time = ban_timers[user_id] + timedelta(minutes=ban_duration)
+        if now >= ban_end_time:
+            # Unban the user
+            user_ban_status[user_id] = False
+            await context.bot.send_message(chat_id=chat_id, text="*✅ Ban lifted. You can use the bot now.*", parse_mode='Markdown')
+        else:
+            remaining_ban = (ban_end_time - now).seconds // 60
+            await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You are banned. Try again in {remaining_ban} minutes.*", parse_mode='Markdown')
+            return
 
     # Check if user is approved
     if str(chat_id) not in approved_ids and user_id not in approved_ids:
