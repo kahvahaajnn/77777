@@ -104,17 +104,22 @@ async def attack(update: Update, context: CallbackContext):
     args = context.args
     now = datetime.now()
 
-    # Check if user is banned
-    if user_ban_status.get(user_id, False):
-        ban_start_time = ban_timers[user_id]
-        elapsed_minutes = (now - ban_start_time).seconds // 60
-        if elapsed_minutes >= ban_duration:
-            user_ban_status[user_id] = False
-            await context.bot.send_message(chat_id=chat_id, text="*✅ Your ban has expired. You can now use the bot.*", parse_mode='Markdown')
-        else:
-            remaining_ban = ban_duration - elapsed_minutes
-            await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You are banned. Try again in {remaining_ban} minutes.*", parse_mode='Markdown')
-            return
+    # Check if user is admin and bypass ban logic
+    if user_id == str(ADMIN_USER_ID):
+        # Admin ko spam ban na ho, bas aage continue karte hain
+        pass
+    else:
+        # Check if user is banned
+        if user_ban_status.get(user_id, False):
+            ban_start_time = ban_timers[user_id]
+            elapsed_minutes = (now - ban_start_time).seconds // 60
+            if elapsed_minutes >= ban_duration:
+                user_ban_status[user_id] = False
+                await context.bot.send_message(chat_id=chat_id, text="*✅ Your ban has expired. You can now use the bot.*", parse_mode='Markdown')
+            else:
+                remaining_ban = ban_duration - elapsed_minutes
+                await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You are banned. Try again in {remaining_ban} minutes.*", parse_mode='Markdown')
+                return
 
     # Check if user is approved
     if str(chat_id) not in approved_ids and user_id not in approved_ids:
@@ -123,13 +128,6 @@ async def attack(update: Update, context: CallbackContext):
 
     # Handle invalid /attack usage
     if len(args) != 3:
-        user_attack_count[user_id] += 1
-        if user_attack_count[user_id] >= max_attacks_per_hour:
-            user_ban_status[user_id] = True
-            ban_timers[user_id] = now
-            user_attack_count[user_id] = 0  # Reset count after banning
-            await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You are banned for {ban_duration} minutes due to spamming invalid /attack commands.*", parse_mode='Markdown')
-            return
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ Invalid /attack command. Use /attack <ip> <port> <time>*", parse_mode='Markdown')
         return
 
