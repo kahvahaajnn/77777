@@ -51,7 +51,7 @@ async def help_command(update: Update, context: CallbackContext):
         "/remove <id> - Remove a user or group (admin only)\n"
         "/attack <ip> <port> <time> - Launch an attack (approved users only)\n"
         "/check - List all users who have used the bot\n"
-        "/warnall - Send feedback request to all users\n"
+        "/checkout - List all users who opened the bot (admin only)\n"
         "/dismiss <id> - Unban a user (admin only)\n"
         "/help - Show this help message"
     )
@@ -208,15 +208,25 @@ async def check(update: Update, context: CallbackContext):
     users = "\n".join(f"ID: {user}, Username: {context.bot.get_chat(user).username}" for user in user_attack_times)
     await context.bot.send_message(chat_id=chat_id, text=f"*Users:* \n{users}", parse_mode='Markdown')
 
-# Warnall command
-async def warnall(update: Update, context: CallbackContext):
+# Checkout command
+async def checkout(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
     if chat_id != ADMIN_USER_ID:
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ You need admin permission to use this command.*", parse_mode='Markdown')
         return
 
-    for user in user_attack_times.keys():
-        await context.bot.send_message(chat_id=user, text="*Send feedback to owner: @GODxAloneBOY*", parse_mode='Markdown')
+    # List all users who opened the bot
+    users_info = []
+    for user_id in user_attack_times.keys():
+        try:
+            chat = await context.bot.get_chat(user_id)
+            username = chat.username or "No Username"
+            users_info.append(f"ID: {user_id}, Username: @{username}")
+        except Exception:
+            users_info.append(f"ID: {user_id}, Username: Unknown")
+
+    message = "\n".join(users_info) or "*No users have opened the bot yet.*"
+    await context.bot.send_message(chat_id=chat_id, text=f"*Users who opened the bot:*\n{message}", parse_mode='Markdown')
 
 # Dismiss command
 async def dismiss(update: Update, context: CallbackContext):
@@ -243,8 +253,8 @@ def main():
     application.add_handler(CommandHandler("remove", remove))
     application.add_handler(CommandHandler("attack", attack))
     application.add_handler(CommandHandler("check", check))
-    application.add_handler(CommandHandler("warnall", warnall))
     application.add_handler(CommandHandler("dismiss", dismiss))
+    application.add_handler(CommandHandler("checkout", checkout))  # New /checkout command
     application.add_handler(CommandHandler("help", help_command))
     application.run_polling()
 
