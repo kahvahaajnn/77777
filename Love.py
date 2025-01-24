@@ -153,9 +153,9 @@ async def attack(update: Update, context: CallbackContext):
     ip, port, time = args
     await context.bot.send_message(chat_id=chat_id, text=(
         f"*😈 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗 😈*\n\n"
-        f"*👙 TARGET  >:* {ip}\n"
-        f"*🔌 PORT    >:* {port}\n"
-        f"*⏳ DURATOIN >:* {time} seconds\n"
+        f"*👙 TARGET :* {ip}\n"
+        f"*🔌 PORT :* {port}\n"
+        f"*⏳ DURATOIN :* {time} seconds\n"
     ), parse_mode='Markdown')
 
     asyncio.create_task(run_attack(chat_id, ip, port, time, context))
@@ -179,8 +179,8 @@ async def run_attack(chat_id, ip, port, time, context):
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Error during the attack: {str(e)}*", parse_mode='Markdown')
 
     finally:
-        await context.bot.send_message(chat_id=chat_id, text="*🔰 𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗜𝗡𝗜𝗦𝗛𝗘𝗗 🔰*\𝗻"
-                                                          "* SEND FEEDBACK TO OWNER :- @GODxAloneBOY*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*🔰 𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗜𝗡𝗜𝗦𝗛𝗘𝗗 🔰*\n"
+                                                             "* SEND FEEDBACK TO OWNER :- @GODxAloneBOY*", parse_mode='Markdown')
 
 # Main Function
 def main():
