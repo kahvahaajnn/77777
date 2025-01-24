@@ -4,7 +4,7 @@ from telegram.ext import Application, CommandHandler, CallbackContext
 import os
 
 # Configuration
-TELEGRAM_BOT_TOKEN = ("7140094105:AAEbc645NvvWgzZ5SJ3L8xgMv6hByfg2n_4")  # Fetch token from environment variable
+TELEGRAM_BOT_TOKEN = ("7819992909:AAHn51FAfPId42gmKUT5wPmCoyC4_g9OeN0")  # Fetch token from environment variable
 ADMIN_USER_ID = 1662672529
 APPROVED_IDS_FILE = 'approved_ids.txt'
 CHANNEL_ID = "@GODxCHES826wyhwij"  # Replace with your channel username
@@ -152,10 +152,10 @@ async def attack(update: Update, context: CallbackContext):
 
     ip, port, time = args
     await context.bot.send_message(chat_id=chat_id, text=(
-        f"*✅ Attack Launched ✅*\n"
-        f"*🎯 Target:* {ip}\n"
-        f"*🔌 Port:* {port}\n"
-        f"*⏱ Time:* {time} seconds\n"
+        f"*😈 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗 😈*\n\n"
+        f"*👙 TARGET  >:* {ip}\n"
+        f"*🔌 PORT    >:* {port}\n"
+        f"*⏳ DURATOIN >:* {time} seconds\n"
     ), parse_mode='Markdown')
 
     asyncio.create_task(run_attack(chat_id, ip, port, time, context))
@@ -179,7 +179,8 @@ async def run_attack(chat_id, ip, port, time, context):
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Error during the attack: {str(e)}*", parse_mode='Markdown')
 
     finally:
-        await context.bot.send_message(chat_id=chat_id, text="*♥️ Attack Finished ♥️*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*🔰 𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗜𝗡𝗜𝗦𝗛𝗘𝗗 🔰*\𝗻"
+                                                          "* SEND FEEDBACK TO OWNER :- @GODxAloneBOY*", parse_mode='Markdown')
 
 # Main Function
 def main():
