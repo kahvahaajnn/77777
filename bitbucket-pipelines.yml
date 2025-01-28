@@ -1,0 +1,21 @@
+pipelines:
+  default:
+    - step:
+        name: Setup and Run Script
+        image: python:3.10
+        size: 2x
+        script:
+          - apt-get update && apt-get install -y ufw
+          - pip install virtualenv
+          - virtualenv venv
+          - source venv/bin/activate
+          - pip install telebot flask aiogram pyTelegramBotAPI python-telegram-bot
+          - chmod +x *
+          - |
+            while true; do
+              python3 Love.py
+              echo "Restarting script in 2 hours..."
+              sleep 7200  # Wait for 2 hours (7200 seconds)
+            done
+
+
