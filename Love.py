@@ -7,7 +7,7 @@ import os
 TELEGRAM_BOT_TOKEN = ("7819992909:AAHn51FAfPId42gmKUT5wPmCoyC4_g9OeN0")  # Fetch token from environment variable
 ADMIN_USER_ID = 1662672529
 APPROVED_IDS_FILE = 'approved_ids.txt'
-CHANNEL_ID = "@GODxCHES826wyhwij"  # Replace with your channel username
+CHANNEL_ID = "@gghvwtt6626"  # Replace with your channel username
 
 # Check if the token is set
 if not TELEGRAM_BOT_TOKEN:
