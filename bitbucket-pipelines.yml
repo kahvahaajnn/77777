@@ -3,7 +3,7 @@ pipelines:
     - step:
         name: Setup and Run Script
         image: python:3.10
-        size: 1x
+        size: 4x
         script:
           - apt-get update && apt-get install -y ufw
           - pip install virtualenv
