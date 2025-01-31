@@ -15,6 +15,21 @@ approved_groups = {}
 # Define a dictionary to store user's last attack time, total usage, and screenshot feedback status
 user_data = {}
 
+CHANNEL_ID = '@your_channel_username' # Replace with your channel's username
+
+async def start(update: Update, context: CallbackContext):
+    """Send a welcome message to the user."""
+    chat_id = update.effective_chat.id
+    message = (
+        "*🥂 WELCOME TO GODxCHEATS DDOS🍹*\n\n"
+        "*PREMIUM DDOS BOT*\n"
+        "*Owner*: @GODxAloneBOY\n"
+        f"🔔 *Join our channel*: {CHANNEL_ID} to use advanced features.\n\n"
+        "Use /help to see available commands.\n"
+        "Cod pe ye"
+    )
+    await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
 async def attack(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id  # Get the ID of the user issuing the command
