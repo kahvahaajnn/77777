@@ -9,6 +9,7 @@ APPROVED_IDS_FILE = 'approved_ids.txt'
 attack_in_progress = False
 user_cooldowns = {}  # Store user cooldowns (last attack time)
 user_feedback_status = {}  # Store feedback status for each user
+first_attack_feedback_submitted = {}  # Track if feedback is submitted for the first attack
 
 # Load approved IDs (users and groups) from file
 def load_approved_ids():
@@ -106,8 +107,8 @@ async def attack(update: Update, context: CallbackContext):
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You have {cooldown_remaining} seconds remaining before you can attack again.*", parse_mode='Markdown')
         return
 
-    # Check if user has submitted feedback
-    if not is_feedback_submitted(user_id):
+    # Check if feedback is submitted based on the attack count
+    if not first_attack_feedback_submitted.get(user_id, False):
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ Please submit screenshot feedback for your previous attack before launching another one.*", parse_mode='Markdown')
         return
 
@@ -146,7 +147,11 @@ async def run_attack(chat_id, ip, port, time, context, user_id):
         attack_in_progress = False
         # Set the cooldown for the user
         set_cooldown(user_id, int(time))
-        await context.bot.send_message(chat_id=chat_id, text="*✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐅𝐈𝐍𝐈𝐒𝐇𝐄𝐃 ✅*\n*SEND FEEDBACK TO OWNER*\n*@GODxAloneBOY*", parse_mode='Markdown')
+        if not first_attack_feedback_submitted.get(user_id, False):
+            first_attack_feedback_submitted[user_id] = True
+            await context.bot.send_message(chat_id=chat_id, text="*✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐅𝐈𝐍𝐈𝐒𝐇𝐄𝐃 ✅*\n*SEND FEEDBACK TO OWNER*\n*@GODxAloneBOY*", parse_mode='Markdown')
+        else:
+            await context.bot.send_message(chat_id=chat_id, text="*✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐅𝐈𝐍𝐈𝐒𝐇𝐄𝐃 ✅*", parse_mode='Markdown')
 
 # Function to get remaining cooldown time
 def get_cooldown_remaining(user_id):
