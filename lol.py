@@ -4,7 +4,7 @@ from telegram.ext import Application, CommandHandler, CallbackContext
 import os
 
 # Configuration
-TELEGRAM_BOT_TOKEN = "7819992909:AAHfbmckp2vxVRCmu9hhFq42q_hWZfvu1HM"  # Fetch token from environment variable
+TELEGRAM_BOT_TOKEN = "7140094105:AAEbc645NvvWgzZ5SJ3L8xgMv6hByfg2n_4"  # Fetch token from environment variable
 ADMIN_USER_ID = 1662672529
 APPROVED_IDS_FILE = 'approved_ids.txt'
 CHANNEL_ID = "@jsbananannanan"  # Replace with your channel username
@@ -92,6 +92,56 @@ async def help_command(update: Update, context: CallbackContext):
         "/referral - Check your referral progress.\n"
     )
     await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
+# Approve Command
+async def approve(update: Update, context: CallbackContext):
+    """Approve a user or group ID to use the bot."""
+    chat_id = update.effective_chat.id
+    args = context.args
+
+    if not await is_admin(chat_id):
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
+        return
+
+    if len(args) != 1:
+        await context.bot.send_message(chat_id=chat_id, text="*Usage: /approve <id>*", parse_mode='Markdown')
+        return
+
+    # Extract the target ID
+    target_id = args[0].strip()
+
+    # Validate that the target ID is a number
+    if not target_id.lstrip('-').isdigit():
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Invalid ID format. Must be a numeric ID.*", parse_mode='Markdown')
+        return
+
+    # Add the target ID to the approved list
+    approved_ids.add(target_id)
+    save_approved_ids()
+
+    await context.bot.send_message(chat_id=chat_id, text=f"*✅ ID {target_id} approved.*", parse_mode='Markdown')
+
+# Remove Command
+async def remove(update: Update, context: CallbackContext):
+    """Remove a user or group ID from the approved list."""
+    chat_id = update.effective_chat.id
+    args = context.args
+
+    if not await is_admin(chat_id):
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
+        return
+
+    if len(args) != 1:
+        await context.bot.send_message(chat_id=chat_id, text="*Usage: /remove <id>*", parse_mode='Markdown')
+        return
+
+    target_id = args[0].strip()
+    if target_id in approved_ids:
+        approved_ids.remove(target_id)
+        save_approved_ids()
+        await context.bot.send_message(chat_id=chat_id, text=f"*✅ ID {target_id} removed.*", parse_mode='Markdown')
+    else:
+        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ ID {target_id} is not approved.*", parse_mode='Markdown')
 
 async def attack(update: Update, context: CallbackContext):
     """Launch an attack if the user is approved, a channel member, and has 5 referrals."""
