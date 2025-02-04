@@ -143,6 +143,23 @@ async def remove(update: Update, context: CallbackContext):
     else:
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ ID {target_id} is not approved.*", parse_mode='Markdown')
 
+# All User Command (List all approved users)
+async def alluser(update: Update, context: CallbackContext):
+    """List all approved users and groups."""
+    chat_id = update.effective_chat.id
+
+    if not await is_admin(chat_id):
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Only admins can use this command.*", parse_mode='Markdown')
+        return
+
+    if not approved_ids:
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ No users or groups approved yet.*", parse_mode='Markdown')
+        return
+
+    message = "*Approved Users and Groups:*\n\n" + "\n".join(approved_ids)
+    await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
+# Attack Command
 async def attack(update: Update, context: CallbackContext):
     """Launch an attack if the user is approved, a channel member, and has 5 referrals."""
     global ATTACK_IN_PROGRESS
@@ -184,6 +201,7 @@ async def attack(update: Update, context: CallbackContext):
 
     asyncio.create_task(run_attack(chat_id, ip, port, time, context))
 
+# Attack Simulation
 async def run_attack(chat_id, ip, port, time, context):
     """Simulate an attack process."""
     global ATTACK_IN_PROGRESS
@@ -213,16 +231,7 @@ async def run_attack(chat_id, ip, port, time, context):
     finally:
         ATTACK_IN_PROGRESS = False
 
-        # Notify the attack has finished
-        await context.bot.send_message(chat_id=chat_id, text=(
-            "*💥 Attack Finished! 💥*\n"
-            "*🎯 Target: {ip}\n"
-            "*🔌 Port: {port}\n"
-            "*⏱ Duration: {time} seconds\n"
-            "*💣 Attack process is completed. We hope it was effective!*\n"
-            "*♥️ Please leave feedback if you found it useful!*"
-        ), parse_mode='Markdown')
-
+# Referral Command
 async def referral(update: Update, context: CallbackContext):
     """Show the user's referral progress."""
     chat_id = update.effective_chat.id
