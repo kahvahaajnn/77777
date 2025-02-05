@@ -47,7 +47,7 @@ async def help_command(update: Update, context: CallbackContext):
         "*⚠️ Important Notes:*\n"
         "*1. Only approved users can launch attacks.*\n"
         "*2. Use responsibly and with permission, DDoS attacks are illegal without consent.*\n"
-        "*3. Contact the bot owner @RAJOWNER90 for assistance or clarifications.*\n\n"
+        "*3. Contact the bot owner @GODxAloneBOY for assistance or clarifications.*\n\n"
         "*⚡ Owner: @GODxAloneboy*\n"
         "*📢 Channel: [GODxCHEATS Channel](https://t.me/+03wLVBPurPk2NWRl)*"
     )
