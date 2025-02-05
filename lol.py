@@ -31,7 +31,7 @@ async def start(update: Update, context: CallbackContext):
         "*➤ /attack <ip> <port> <time> ➔ Launch a DDOS attack (Approved Users Only) 💥*\n"
         "*➤ /help ➔ Display detailed usage instructions for this bot 🧑‍💻*\n\n"
         "*💬 Owner: @GODxAloneboy*\n"
-        "*📢 Channel: [GODxCHEATS Channel](https://t.me/+sUHNz0xm_205MTBl)*"
+        "*📢 Channel: [GODxCHEATS Channel](https://t.me/+03wLVBPurPk2NWRl)*"
     )
     await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
@@ -49,7 +49,7 @@ async def help_command(update: Update, context: CallbackContext):
         "*2. Use responsibly and with permission, DDoS attacks are illegal without consent.*\n"
         "*3. Contact the bot owner @RAJOWNER90 for assistance or clarifications.*\n\n"
         "*⚡ Owner: @GODxAloneboy*\n"
-        "*📢 Channel: [GODxCHEATS Channel](https://t.me/+sUHNz0xm_205MTBl)*"
+        "*📢 Channel: [GODxCHEATS Channel](https://t.me/+03wLVBPurPk2NWRl)*"
     )
     await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
@@ -115,8 +115,8 @@ async def run_attack(chat_id, ip, port, time, context):
             "*⚡ Port: {port}*\n"
             "*⚡ Duration: {time} seconds*\n"
             "*⚡ The attack has been successfully finished and the target has been impacted! 💥*\n"
-            "*🔥 Owner @RAJOWNER90*\n"
-            "*🔥 Channel: https://t.me/+sUHNz0xm_205MTBl*"
+            "*🔥 Owner @GODxAloneBOY*\n"
+            "*♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️*"
         ).format(ip=ip, port=port, time=time), parse_mode='Markdown')
 
 async def attack(update: Update, context: CallbackContext):
@@ -127,7 +127,7 @@ async def attack(update: Update, context: CallbackContext):
     args = context.args
 
     if user_id not in users:
-        await context.bot.send_message(chat_id=chat_id, text="*🤡 You need to get permission to use this bot. Contact @RAJOWNER90.*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*🤡 You need to get permission to use this bot. Contact owner @GODxAloneBOY.*", parse_mode='Markdown')
         return
 
     if len(args) != 3:
@@ -140,8 +140,8 @@ async def attack(update: Update, context: CallbackContext):
         f"*⭐ Target IP: {ip}*\n"
         f"*⭐ Target Port: {port}*\n"
         f"*⭐ Attack Duration: {time} seconds*\n"
-        f"*🔥 Owner @RAJOWNER90*\n"
-        f"*🔥 Channel: https://t.me/+sUHNz0xm_205MTBl*"
+        f"*🔥 Owner @GODxAloneBOY*\n"
+        f"*♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️*"
     ), parse_mode='Markdown')
 
     asyncio.create_task(run_attack(chat_id, ip, port, time, context))
