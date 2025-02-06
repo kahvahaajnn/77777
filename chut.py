@@ -1,4 +1,5 @@
 import asyncio
+import time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 
@@ -6,6 +7,12 @@ TELEGRAM_BOT_TOKEN = '7819992909:AAHfbmckp2vxVRCmu9hhFq42q_hWZfvu1HM'
 ADMIN_USER_ID = 1662672529
 USERS_FILE = 'users.txt'
 attack_in_progress = False
+
+# Dictionary to track the last attack time for each user
+user_attack_times = {}
+
+# Set the cooldown time (150 seconds)
+COOLDOWN_TIME = 150  # in seconds
 
 def load_users():
     try:
@@ -130,6 +137,16 @@ async def attack(update: Update, context: CallbackContext):
         await context.bot.send_message(chat_id=chat_id, text="*🤡 You need to get permission to use this bot. Contact owner @GODxAloneBOY.*", parse_mode='Markdown')
         return
 
+    # Check if the user is on cooldown
+    current_time = time.time()
+    last_attack_time = user_attack_times.get(user_id, 0)
+
+    if current_time - last_attack_time < COOLDOWN_TIME:
+        # If the user is on cooldown, calculate remaining time
+        remaining_time = COOLDOWN_TIME - (current_time - last_attack_time)
+        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ You need to wait {int(remaining_time)} seconds before launching another attack.*", parse_mode='Markdown')
+        return
+
     if len(args) != 3:
         await context.bot.send_message(chat_id=chat_id, text="*🌟 Usage: /attack <ip> <port> <time>*", parse_mode='Markdown')
         return
@@ -143,6 +160,9 @@ async def attack(update: Update, context: CallbackContext):
         f"*🔥 Owner @GODxAloneBOY*\n"
         f"*♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️♥️*"
     ), parse_mode='Markdown')
+
+    # Update the last attack time for the user
+    user_attack_times[user_id] = current_time
 
     asyncio.create_task(run_attack(chat_id, ip, port, time, context))
 
